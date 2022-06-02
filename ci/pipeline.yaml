@@ -1,0 +1,45 @@
+---
+resources:
+- name: source
+  type: git
+  icon: github
+  source:
+    uri: git@github.com:vmware-samples/concourse-resource-for-marketplace.git
+    private_key: ((github.private_key))
+    branch: main
+
+- name: staging-image
+  type: registry-image
+  icon: docker
+  source:
+    repository: harbor-repo.vmware.com/tanzu_isv_engineering/mkpcli_concourse_resource
+    username: ((harbor.username))
+    password: ((harbor.token))
+    tag: staging
+
+jobs:
+
+- name: build
+  plan:
+  - get: source
+  - task: build-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: harbor-repo.vmware.com/dockerhub-proxy-cache/concourse/oci-build-task
+          username: ((harbor.username))
+          password: ((harbor.token))
+      inputs:
+        - name: source
+          path: .
+      outputs:
+        - name: image
+      run:
+        path: build
+  - put: staging-image
+    inputs: [ image ]
+    params:
+      image: image/image.tar
