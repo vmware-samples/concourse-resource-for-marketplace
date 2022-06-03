@@ -35,9 +35,29 @@ resources:
     product_slug: vmware-tanzu-greenplum-r-11
 
 jobs:
+- name: test
+  plan:
+    - get: source
+      trigger: true
+    - task: test
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: ghcr.io/vmware-tanzu/carvel-docker-image
+            tag: latest
+        inputs:
+          - name: source
+        run:
+          path: make
+          dir: source
+          args: [test]
+
 - name: build
   plan:
   - get: source
+    passed: [test]
     trigger: true
   - task: build-image
     privileged: true

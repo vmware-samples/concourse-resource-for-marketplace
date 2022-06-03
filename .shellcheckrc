@@ -1,0 +1,3 @@
+# Disabling SC1091 means shellcheck does not complain about
+# sourcing an external resource, in our case, test-lib/shunit2/shunit2
+disable=SC1091

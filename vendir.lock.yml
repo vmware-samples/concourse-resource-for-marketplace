@@ -1,0 +1,11 @@
+apiVersion: vendir.k14s.io/v1alpha1
+directories:
+- contents:
+  - git:
+      commitTitle: 'Merge pull request #126 from osamuaoki/master...'
+      sha: 47be8b23a46a7897e849f1841f0fb704d34d0f6e
+      tags:
+      - v2.1.8-93-g47be8b2
+    path: shunit2
+  path: test-lib
+kind: LockConfig
