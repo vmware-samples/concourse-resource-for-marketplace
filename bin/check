@@ -8,5 +8,6 @@ export CSP_API_TOKEN MARKETPLACE_ENV
 
 versions=$(mkpcli product list-versions --product "${PRODUCT_SLUG}" --output json)
 jq '[
-     .[] | with_entries(select([.key] | inside(["versionnumber"])))
-   ] | reverse[]' <(echo "${versions}")
+  .[] | with_entries(select([.key] | inside(["versionnumber"])))
+] | reverse' \
+  <(echo "${versions}")
