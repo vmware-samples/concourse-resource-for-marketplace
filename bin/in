@@ -4,26 +4,24 @@ SOURCE=$(cat)
 CSP_API_TOKEN=$(jq -r .source.csp_api_token <(echo "${SOURCE}"))
 MARKETPLACE_ENV=$(jq -r .source.marketplace_env <(echo "${SOURCE}"))
 PRODUCT_SLUG=$(jq -r .source.product_slug <(echo "${SOURCE}"))
+
 PRODUCT_VERSION=$(jq -r .version.versionnumber <(echo "${SOURCE}"))
-SKIP_DOWNLOAD=$(jq -r .params.skip_download <(echo "${SOURCE}"))
+
+#SKIP_DOWNLOAD=$(jq -r .params.skip_download <(echo "${SOURCE}"))
+FILTER=$(jq -r .params.filter <(echo "${SOURCE}"))
+FILENAME=$(jq -r .params.filename <(echo "${SOURCE}"))
 export CSP_API_TOKEN MARKETPLACE_ENV
 
-mkpcli product get --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --output json > $1/product.json
-assets=$(mkpcli product list-assets --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --output json)
+mkpcli product get --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --output json > "$1/product.json"
 
-filename=$(echo "${assets}" | jq -r .[0].filename)
-type=$(echo "${assets}" | jq -r .[0].type)
-size=$(echo "${assets}" | jq -r .[0].size)
+mkpcli download --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --filter "${FILTER}" --filename "$1/${FILENAME}"
 
 jq -n \
-  --arg version "${PRODUCT_VERSION}" \
-  --arg filename "${filename}" \
-  --arg type "${type}" \
-  --arg size "${size}" '{
+  --arg slug "${PRODUCT_SLUG}" \
+  --arg version "${PRODUCT_VERSION}" '{
   "version": {"versionnumber": $version},
-  "metadata": [{
-    "filename": $filename,
-    "type": $type,
-    "size": $size
-  }]
+  "metadata": [
+    {"name": "slug", "value": $slug},
+    {"name": "version", "value": $version}
+  ]
 }'
