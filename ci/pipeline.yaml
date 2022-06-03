@@ -55,7 +55,7 @@ jobs:
           args:
             - -exc
             - |
-              apt-get update && apt-get install -y make
+              apt-get update && apt-get install -y git make
               make test
 
 - name: build
