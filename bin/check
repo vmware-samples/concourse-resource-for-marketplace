@@ -8,11 +8,7 @@ export CSP_API_TOKEN MARKETPLACE_ENV
 
 #VERSION=$(jq -r .version <(echo "${SOURCE}"))
 
-
-
-JQQueryToRemoveExtraKeys='[
-  .[] | with_entries(select([.key] | inside(["versionnumber"])))
-]'
-
-
-mkpcli product list-versions --product "${PRODUCT_SLUG}" --output json | jq "${JQQueryToRemoveExtraKeys}"
+versions=$(mkpcli product list-versions --product "${PRODUCT_SLUG}" --output json)
+jq '[
+     .[] | with_entries(select([.key] | inside(["versionnumber"])))
+   ] | reverse[]' <(echo "${versions}")

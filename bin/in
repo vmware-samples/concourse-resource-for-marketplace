@@ -5,8 +5,10 @@ CSP_API_TOKEN=$(jq -r .source.csp_api_token <(echo "${SOURCE}"))
 MARKETPLACE_ENV=$(jq -r .source.marketplace_env <(echo "${SOURCE}"))
 PRODUCT_SLUG=$(jq -r .source.product_slug <(echo "${SOURCE}"))
 PRODUCT_VERSION=$(jq -r .version.versionnumber <(echo "${SOURCE}"))
+SKIP_DOWNLOAD=$(jq -r .params.skip_download <(echo "${SOURCE}"))
 export CSP_API_TOKEN MARKETPLACE_ENV
 
+mkpcli product get --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --output json > $1/product.json
 assets=$(mkpcli product list-assets --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --output json)
 
 filename=$(echo "${assets}" | jq -r .[0].filename)
