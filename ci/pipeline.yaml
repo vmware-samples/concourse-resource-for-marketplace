@@ -32,7 +32,7 @@ resources:
   source:
     csp_api_token: ((marketplace_api_token))
     marketplace_env: production
-    product_slug: vmware-tanzu-greenplum-r-11
+    product_slug: nginx
 
 jobs:
 - name: test
@@ -88,3 +88,45 @@ jobs:
 - name: test-get
   plan:
     - get: test-product
+      params:
+        accept_eula: true
+        filename: nginx-chart.tgz
+    - task: inspect-product.json
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: harbor-repo.vmware.com/dockerhub-proxy-cache/stedolan/jq
+            username: ((harbor.username))
+            password: ((harbor.token))
+            tag: latest
+        inputs:
+          - name: test-product
+        run:
+          path: bash
+          dir: test-product
+          args:
+            - -exc
+            - |
+              test $(jq -r .slug product.json) == nginx
+    - task: inspect-downloaded-chart
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: harbor-repo.vmware.com/dockerhub-proxy-cache/alpine/helm
+            username: ((harbor.username))
+            password: ((harbor.token))
+            tag: latest
+        inputs:
+          - name: test-product
+        run:
+          path: bash
+          dir: test-product
+          args:
+            - -exc
+            - |
+              test -f nginx-chart.tgz
+              helm show chart nginx-chart.tgz | grep "name: nginx"

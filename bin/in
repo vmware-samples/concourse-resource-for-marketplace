@@ -8,13 +8,18 @@ PRODUCT_SLUG=$(jq -r .source.product_slug <(echo "${SOURCE}"))
 PRODUCT_VERSION=$(jq -r .version.versionnumber <(echo "${SOURCE}"))
 
 #SKIP_DOWNLOAD=$(jq -r .params.skip_download <(echo "${SOURCE}"))
+ACCEPT_EULA=$(jq -r .params.accept_eula <(echo "${SOURCE}"))
 FILTER=$(jq -r .params.filter <(echo "${SOURCE}"))
 FILENAME=$(jq -r .params.filename <(echo "${SOURCE}"))
 export CSP_API_TOKEN MARKETPLACE_ENV
 
 mkpcli product get --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --output json > "$1/product.json"
 
-mkpcli download --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --filter "${FILTER}" --filename "$1/${FILENAME}"
+eulaArg=""
+if [ "${ACCEPT_EULA}" == "true" ]; then
+  eulaArg="--accept-eula"
+fi
+mkpcli download --product "${PRODUCT_SLUG}" --product-version "${PRODUCT_VERSION}" --filter "${FILTER}" --filename "$1/${FILENAME}" "${eulaArg}"
 
 jq -n \
   --arg slug "${PRODUCT_SLUG}" \
