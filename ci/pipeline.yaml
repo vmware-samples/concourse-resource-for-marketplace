@@ -50,9 +50,13 @@ jobs:
         inputs:
           - name: source
         run:
-          path: make
+          path: bash
           dir: source
-          args: [test]
+          args:
+            - -exc
+            - |
+              apt-get update && apt-get install -y make
+              make test
 
 - name: build
   plan:
