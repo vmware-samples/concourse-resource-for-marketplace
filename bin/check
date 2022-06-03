@@ -4,12 +4,13 @@ SOURCE=$(cat)
 CSP_API_TOKEN=$(jq -r .source.csp_api_token <(echo "${SOURCE}"))
 MARKETPLACE_ENV=$(jq -r .source.marketplace_env <(echo "${SOURCE}"))
 PRODUCT_SLUG=$(jq -r .source.product_slug <(echo "${SOURCE}"))
-
-VERSION=$(jq -r .version <(echo "${SOURCE}"))
-
-
 export CSP_API_TOKEN MARKETPLACE_ENV
 
-JQQueryToRemoveExtraKeys='[.[] | del(.versiondetails, .status, .versioninstruction, .createdon, .tag, .IsNewVersion)]'
+#VERSION=$(jq -r .version <(echo "${SOURCE}"))
+
+
+
+JQQueryToRemoveExtraKeys='.[] | with_entries(select([.key] | inside(["versionnumber"])))'
+
 
 mkpcli product list-versions --product "${PRODUCT_SLUG}" --output json | jq "${JQQueryToRemoveExtraKeys}"

@@ -1,4 +1,13 @@
 ---
+resource_types:
+- name: marketplace
+  type: registry-image
+  source:
+    repository: harbor-repo.vmware.com/tanzu_isv_engineering/mkpcli_concourse_resource
+    username: ((harbor.username))
+    password: ((harbor.token))
+    tag: staging
+
 resources:
 - name: source
   type: git
@@ -17,11 +26,19 @@ resources:
     password: ((harbor.token))
     tag: staging
 
-jobs:
+- name: test-product
+  type: marketplace
+  icon: storefront
+  source:
+    csp_api_token: ((marketplace_api_token))
+    marketplace_env: production
+    product_slug: vmware-tanzu-greenplum-r-11
 
+jobs:
 - name: build
   plan:
   - get: source
+    trigger: true
   - task: build-image
     privileged: true
     config:
@@ -43,3 +60,7 @@ jobs:
     inputs: [ image ]
     params:
       image: image/image.tar
+
+- name: test-get
+  plan:
+    - get: test-product
