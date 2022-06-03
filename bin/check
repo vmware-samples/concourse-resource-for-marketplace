@@ -10,7 +10,9 @@ export CSP_API_TOKEN MARKETPLACE_ENV
 
 
 
-JQQueryToRemoveExtraKeys='.[] | with_entries(select([.key] | inside(["versionnumber"])))'
+JQQueryToRemoveExtraKeys='[
+  .[] | with_entries(select([.key] | inside(["versionnumber"])))
+]'
 
 
 mkpcli product list-versions --product "${PRODUCT_SLUG}" --output json | jq "${JQQueryToRemoveExtraKeys}"
