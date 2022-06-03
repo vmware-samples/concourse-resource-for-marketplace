@@ -5,7 +5,7 @@ directories:
     contents:
       - path: shunit2
         git:
-          url: git@github.com:kward/shunit2.git
+          url: https://github.com/kward/shunit2.git
           ref: master
         includePaths:
           - shunit2
