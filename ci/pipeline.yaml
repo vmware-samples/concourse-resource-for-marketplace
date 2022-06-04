@@ -55,8 +55,8 @@ jobs:
           args:
             - -exc
             - |
-              apt-get update && apt-get install -y git make
-              make test
+              apt-get update && apt-get install -y jq git make shellcheck
+              make lint test
 
 - name: build
   plan:

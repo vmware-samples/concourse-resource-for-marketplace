@@ -26,5 +26,5 @@ function check() {
 
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   SOURCE=$(cat)
-  main "$SOURCE"
+  check "$SOURCE"
 fi
