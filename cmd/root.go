@@ -5,20 +5,21 @@ package cmd
 
 import (
 	"os"
+
 	"vmware-samples/concourse-resource-for-marketplace/m/v2/pkg"
 )
 
 var (
-	cmdToExecute string
-	input        *pkg.Input
+	cmdToExecute   string
+	MarketplaceCLI pkg.MarketplaceCLI
 )
 
 func Execute() {
 	var err error
 	if cmdToExecute == "check" {
-		err = checkCmd.Execute()
+		err = CheckCmd.Execute()
 	} else if cmdToExecute == "in" {
-		err = inCmd.Execute()
+		err = InCmd.Execute()
 	} else if cmdToExecute == "out" {
 		err = outCmd.Execute()
 	}

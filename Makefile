@@ -94,9 +94,9 @@ build/out: $(SRC)
 
 build: deps build/check build/in build/out
 
-#build-image: build/mkpcli-linux
-#	docker build . --tag harbor-repo.vmware.com/tanzu_isv_engineering/mkpcli:$(VERSION)
-#
+build-image: Dockerfile
+	docker build . --tag harbor-repo.vmware.com/tanzu_isv_engineering/mkpcli_concourse_resource:$(VERSION)
+
 # #### TESTS ####
 .PHONY: lint test test-features test-units
 

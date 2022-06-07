@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"vmware-samples/concourse-resource-for-marketplace/m/v2/pkg"
 
@@ -12,31 +13,39 @@ import (
 )
 
 func ValidateCheckInput(cmd *cobra.Command, args []string) error {
-	var err error
-	input, err = pkg.ParseFromReader(os.Stdin)
+	input, err := pkg.ParseFromReader(os.Stdin)
 	if err != nil {
 		return err
 	}
-	return input.ValidateSource()
+	err = input.ValidateSource()
+	if err != nil {
+		return err
+	}
+	MarketplaceCLI = input
+	return nil
 }
 
-var checkCmd = &cobra.Command{
+var CheckCmd = &cobra.Command{
 	Use:     "check",
 	Short:   "Check for versions",
 	PreRunE: ValidateCheckInput,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
-		versions, err := input.GetVersions()
+		versions, err := MarketplaceCLI.GetVersions()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get the list of versions: %w", err)
 		}
 
 		output, _ := json.Marshal(versions)
+		if err != nil {
+			return fmt.Errorf("failed to encode the list of versions: %w", err)
+		}
+
 		cmd.Println(string(output))
 		return nil
 	},
 }
 
 func init() {
-	checkCmd.SetOut(checkCmd.OutOrStdout())
+	CheckCmd.SetOut(CheckCmd.OutOrStdout())
 }

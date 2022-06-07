@@ -1,29 +1,118 @@
-# concourse-resource-for-marketplace
+# Concourse Resource for Marketplace
 
-## Overview
+Interact with the [VMware Marketplace](https://marketplace.cloud.vmware.com/) from concourse.
 
-## Try it out
+## Installing
+
+The recommended method to use this resource is with
+[resource_types](https://concourse-ci.org/resource-types.html) in the
+pipeline config as follows:
+
+```yaml
+---
+resource_types:
+- name: marketplace
+  type: registry-image
+  source:
+    repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli_concourse_resource
+```
+
+## Source configuration
+
+```yaml
+resources:
+- name: greenplum
+  type: marketplace
+  source:
+    csp_api_token: {{api-token}}
+    product_slug: vmware-tanzu-greenplum-r-11
+```
+
+* `csp_api_token`: *Required string.*
+
+  API Token from your VMware Cloud Service Portal.
+
+* `product_slug`: *Required string.*
+
+  Slug of the product on the VMware Marketplace.
+
+* `marketplace_env`: *Optional string.*
+
+  Marketplace environment to use. Either `staging` or `production`
+
+  Defaults to `production`.
+
+## Behavior
+
+### `check`: check for new product versions on the VMware Marketplace
+
+Discovers all versions of the provided product.
+
+### `in`: download a product asset from the VMware Marketplace
+
+Downloads a product asset from the VMware Marketplace.
+
+The details for the product is written to both `product.json` in the working directory (typically `/tmp/build/get`).
+Use this to programmatically get information for the product.
+
+#### Parameters
+
+* `filename`: *Required string (unless `skip_download` is `true`).*
+
+  The name of the file to use when saving the downloaded asset.
+
+* `filter`: *Optional string.*
+
+  A string to select a specific asset attached to a product.
+
+* `accept_eula`: *Optional boolean.*
+
+  Accepts the EULA for the product when downloading.
+
+* `skip_download`: *Optional boolean.*
+
+  If `true`, do not download an asset, but still get the product.json file.
+
+```yaml
+resource:
+  - name: nginx
+    type: marketplace
+    source:
+      csp_api_token: {{api-token}}
+      product_slug: nginx
+
+jobs:
+- name: deploy-nginx-chart
+  plan:
+  - get: cluster
+  - get: tasks
+  - get: nginx
+    params:
+      filename: "nginx.tar"
+      accept_eula: true
+  - task: deploy-chart
+    image: image
+    file: tasks/deploy-chart.yml      
+```
+
+## Developing
 
 ### Prerequisites
 
-* Prereq 1
-* Prereq 2
-* Prereq 3
+A valid installation of golang 1.18 is required.
 
-### Build & Run
+### Dependencies
 
-1. Step 1
-2. Step 2
-3. Step 3
+We use [go modules](https://github.com/golang/go/wiki/Modules) for dependencies, so you will have to make sure to turn them on with `GO111MODULE=on`.
 
-## Documentation
+### Running the tests
 
-## Contributing
+Run the tests with the make file:
 
-The concourse-resource-for-marketplace project team welcomes contributions from the community. Before you start working with concourse-resource-for-marketplace, please
-read our [Developer Certificate of Origin](https://cla.vmware.com/dco). All contributions to this repository must be
-signed as described on that page. Your signature certifies that you wrote the patch or have the right to pass it on
-as an open-source patch. For more detailed information, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
+```
+make test
+```
 
-## License
+### Contributing
 
+Please make all pull requests to the `main` branch, and

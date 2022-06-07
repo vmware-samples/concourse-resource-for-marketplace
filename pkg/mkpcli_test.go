@@ -212,4 +212,76 @@ var _ = Describe("Marketplace CLI", func() {
 			})
 		})
 	})
+
+	Describe("DownloadAsset", func() {
+		BeforeEach(func() {
+			input = &pkg.Input{
+				Source: &pkg.SourceInput{
+					CSPAPIToken: "my-csp-api-token",
+					ProductSlug: "my-product",
+				},
+				Version: &pkg.Version{VersionNumber: "1.2.3"},
+				Params: &pkg.ParamsInput{
+					Filename: "kubernetes-1.22.8.ova",
+				},
+			}
+		})
+
+		It("downloads the asset", func() {
+			err := input.DownloadAsset("/path/to/download/folder")
+			Expect(err).ToNot(HaveOccurred())
+
+			By("constructing the right mkpcli command", func() {
+				Expect(mkpcliCommandMaker.CallCount()).To(Equal(1))
+				inputArg, cliArgs := mkpcliCommandMaker.ArgsForCall(0)
+				Expect(inputArg).To(Equal(input))
+				Expect(cliArgs).To(ConsistOf("download", "--product", "my-product", "--product-version", "1.2.3", "--filename", "/path/to/download/folder/kubernetes-1.22.8.ova"))
+			})
+
+			By("invoking the mkpcli", func() {
+				Expect(mkpcliCommand.RunCallCount()).To(Equal(1))
+			})
+		})
+
+		When("the filter is also given", func() {
+			BeforeEach(func() {
+				input.Params.Filter = "kubernetes"
+			})
+			It("downloads the asset with the filter", func() {
+				err := input.DownloadAsset("/path/to/download/folder")
+				Expect(err).ToNot(HaveOccurred())
+
+				By("constructing the right mkpcli command", func() {
+					Expect(mkpcliCommandMaker.CallCount()).To(Equal(1))
+					inputArg, cliArgs := mkpcliCommandMaker.ArgsForCall(0)
+					Expect(inputArg).To(Equal(input))
+					Expect(cliArgs).To(ConsistOf("download", "--product", "my-product", "--product-version", "1.2.3", "--filename", "/path/to/download/folder/kubernetes-1.22.8.ova", "--filter", "kubernetes"))
+				})
+			})
+		})
+
+		When("the command fails", func() {
+			BeforeEach(func() {
+				exitErr := &exec.ExitError{
+					Stderr: []byte("a totally expected error occurred"),
+				}
+				mkpcliCommand.RunReturns(exitErr)
+			})
+			It("returns an error", func() {
+				err := input.DownloadAsset("/path/to/download/folder")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("failed to run mkpcli download --product my-product --product-version 1.2.3 --filename /path/to/download/folder/kubernetes-1.22.8.ova:\na totally expected error occurred\n<nil>"))
+			})
+			When("the error is not an ExitError", func() {
+				BeforeEach(func() {
+					mkpcliCommand.RunReturns(errors.New("a totally generic error occurred"))
+				})
+				It("returns a less helpful error", func() {
+					err := input.DownloadAsset("/path/to/download/folder")
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal("failed to run mkpcli download --product my-product --product-version 1.2.3 --filename /path/to/download/folder/kubernetes-1.22.8.ova: a totally generic error occurred"))
+				})
+			})
+		})
+	})
 })

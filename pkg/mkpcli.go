@@ -8,13 +8,24 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path"
 	"strings"
 )
 
+//go:generate counterfeiter . MarketplaceCLI
+type MarketplaceCLI interface {
+	GetProductJSON() ([]byte, error)
+	GetVersions() ([]*Version, error)
+	DownloadAsset(folder string) error
+
+	GetInputVersion() *Version
+	GetInputSlug() string
+}
+
 func (i *Input) GetProductJSON() ([]byte, error) {
 	args := []string{"product", "get", "--output", "json", "--product", i.Source.ProductSlug, "--product-version", i.Version.VersionNumber}
-	getVersions := MakeMkpcliCommand(i, args...)
-	results, err := getVersions.Output()
+	command := MakeMkpcliCommand(i, args...)
+	results, err := command.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
@@ -27,8 +38,8 @@ func (i *Input) GetProductJSON() ([]byte, error) {
 
 func (i *Input) GetVersions() ([]*Version, error) {
 	args := []string{"product", "list-versions", "--output", "json", "--product", i.Source.ProductSlug}
-	getVersions := MakeMkpcliCommand(i, args...)
-	results, err := getVersions.Output()
+	command := MakeMkpcliCommand(i, args...)
+	results, err := command.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
@@ -47,6 +58,38 @@ func (i *Input) GetVersions() ([]*Version, error) {
 	return GetOnlySince(versions, i.Version), nil
 }
 
-func (i *Input) DownloadAsset() error {
+func (i *Input) DownloadAsset(folder string) error {
+	if i.Params.SkipDownload {
+		return nil
+	}
+
+	filePath := path.Join(folder, i.Params.Filename)
+	args := []string{"download", "--product", i.Source.ProductSlug, "--product-version", i.Version.VersionNumber, "--filename", filePath}
+
+	if i.Params.AcceptEula {
+		args = append(args, "--accept-eula")
+	}
+	if i.Params.Filter != "" {
+		args = append(args, "--filter", i.Params.Filter)
+	}
+
+	command := MakeMkpcliCommand(i, args...)
+	err := command.Run()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("failed to run mkpcli %s:\n%s\n%w", strings.Join(args, " "), string(exitErr.Stderr), err)
+		}
+		return fmt.Errorf("failed to run mkpcli %s: %w", strings.Join(args, " "), err)
+	}
+
 	return nil
+}
+
+func (i *Input) GetInputVersion() *Version {
+	return i.Version
+}
+
+func (i *Input) GetInputSlug() string {
+	return i.Source.ProductSlug
 }

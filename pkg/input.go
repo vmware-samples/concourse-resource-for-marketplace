@@ -23,9 +23,10 @@ type SourceInput struct {
 }
 
 type ParamsInput struct {
-	AcceptEula bool   `json:"accept_eula"`
-	Filter     string `json:"filter"`
-	Filename   string `json:"filename"`
+	AcceptEula   bool   `json:"accept_eula"`
+	Filter       string `json:"filter"`
+	Filename     string `json:"filename"`
+	SkipDownload bool   `json:"skip_download"`
 }
 
 func ParseFromReader(inputReader io.Reader) (*Input, error) {

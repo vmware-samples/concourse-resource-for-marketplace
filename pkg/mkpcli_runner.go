@@ -10,6 +10,7 @@ import (
 //go:generate counterfeiter . Command
 type Command interface {
 	Output() ([]byte, error)
+	Run() error
 }
 
 //go:generate counterfeiter . MkpcliRunner
