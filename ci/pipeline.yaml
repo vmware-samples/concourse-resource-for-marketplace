@@ -45,18 +45,14 @@ jobs:
         image_resource:
           type: registry-image
           source:
-            repository: ghcr.io/vmware-tanzu/carvel-docker-image
-            tag: latest
+            repository: harbor-repo.vmware.com/dockerhub-proxy-cache/library/golang
+            tag: 1.18
         inputs:
           - name: source
         run:
-          path: bash
+          path: make
           dir: source
-          args:
-            - -exc
-            - |
-              apt-get update && apt-get install -y jq git make shellcheck
-              make lint test
+          args: [ test ]
 
 - name: build
   plan:

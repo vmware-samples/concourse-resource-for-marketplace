@@ -9,7 +9,7 @@ ENV PATH="${PATH}:/root/go/bin"
 WORKDIR /concourse-resource-for-marketplace/
 RUN make build
 
-FROM projects.registry.vmware.com/tanzu_isv_engineering/mkpcli:v0.10.0
+FROM projects.registry.vmware.com/tanzu_isv_engineering/mkpcli:0.10.0
 LABEL description="Concourse Resource for VMware Marketplace"
 LABEL maintainer="tanzu-isv-engineering@groups.vmware.com"
 
