@@ -74,7 +74,7 @@ func (i *Input) DownloadAsset(folder string) error {
 	}
 
 	command := MakeMkpcliCommand(i, args...)
-	err := command.Run()
+	_, err := command.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {

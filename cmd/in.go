@@ -41,7 +41,7 @@ func ValidateInInput(cmd *cobra.Command, args []string) error {
 	}
 
 	if !input.Params.SkipDownload {
-		if input.Params.Filename != "" {
+		if input.Params.Filename == "" {
 			return errors.New("file name can not be empty. Please set params.filename")
 		}
 	}

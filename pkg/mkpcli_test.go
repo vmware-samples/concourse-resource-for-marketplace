@@ -225,6 +225,7 @@ var _ = Describe("Marketplace CLI", func() {
 					Filename: "kubernetes-1.22.8.ova",
 				},
 			}
+			mkpcliCommand.OutputReturns(nil, nil)
 		})
 
 		It("downloads the asset", func() {
@@ -239,7 +240,7 @@ var _ = Describe("Marketplace CLI", func() {
 			})
 
 			By("invoking the mkpcli", func() {
-				Expect(mkpcliCommand.RunCallCount()).To(Equal(1))
+				Expect(mkpcliCommand.OutputCallCount()).To(Equal(1))
 			})
 		})
 
@@ -265,7 +266,7 @@ var _ = Describe("Marketplace CLI", func() {
 				exitErr := &exec.ExitError{
 					Stderr: []byte("a totally expected error occurred"),
 				}
-				mkpcliCommand.RunReturns(exitErr)
+				mkpcliCommand.OutputReturns(nil, exitErr)
 			})
 			It("returns an error", func() {
 				err := input.DownloadAsset("/path/to/download/folder")
@@ -274,7 +275,7 @@ var _ = Describe("Marketplace CLI", func() {
 			})
 			When("the error is not an ExitError", func() {
 				BeforeEach(func() {
-					mkpcliCommand.RunReturns(errors.New("a totally generic error occurred"))
+					mkpcliCommand.OutputReturns(nil, errors.New("a totally generic error occurred"))
 				})
 				It("returns a less helpful error", func() {
 					err := input.DownloadAsset("/path/to/download/folder")
