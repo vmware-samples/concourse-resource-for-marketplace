@@ -1,6 +1,7 @@
 # Copyright 2022 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
 
+ARG MKPCLI_VERSION=latest
 FROM harbor-repo.vmware.com/dockerhub-proxy-cache/library/golang:1.18 as builder
 ARG VERSION
 
@@ -9,7 +10,7 @@ ENV PATH="${PATH}:/root/go/bin"
 WORKDIR /concourse-resource-for-marketplace/
 RUN make build
 
-FROM projects.registry.vmware.com/tanzu_isv_engineering/mkpcli:0.11.0
+FROM projects.registry.vmware.com/tanzu_isv_engineering/mkpcli:$MKPCLI_VERSION
 LABEL description="Concourse Resource for VMware Marketplace"
 LABEL maintainer="tanzu-isv-engineering@groups.vmware.com"
 

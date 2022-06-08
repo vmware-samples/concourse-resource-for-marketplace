@@ -34,6 +34,14 @@ resources:
     marketplace_env: production
     product_slug: nginx
 
+- name: mkpcli
+  type: registry-image
+  icon: docker
+  source:
+    repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
+    username: ((harbor-public.username))
+    password: ((harbor-public.token))
+
 jobs:
 - name: test
   plan:
@@ -56,9 +64,24 @@ jobs:
 
 - name: build
   plan:
+  - get: mkpcli
   - get: source
     passed: [test]
     trigger: true
+  - task: make-build-args
+    image: mkpcli
+    config:
+      platform: linux
+      inputs:
+        - name: mkpcli
+      outputs:
+        - name: build-args
+      run:
+        path: bash
+        args:
+          - -exc
+          - |
+            echo "MKPCLI_VERSION="$(cat mkpcli/tag) > build-args/args.env
   - task: build-image
     privileged: true
     config:
@@ -69,7 +92,10 @@ jobs:
           repository: harbor-repo.vmware.com/dockerhub-proxy-cache/concourse/oci-build-task
           username: ((harbor.username))
           password: ((harbor.token))
+      params:
+        BUILD_ARGS_FILE: build-args/args.env
       inputs:
+        - name: build-args
         - name: source
           path: .
       outputs:
@@ -93,7 +119,7 @@ jobs:
         image_resource:
           type: registry-image
           source:
-            repository: harbor-repo.vmware.com/dockerhub-proxy-cache/stedolan/jq
+            repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
             username: ((harbor.username))
             password: ((harbor.token))
             tag: latest
@@ -119,7 +145,7 @@ jobs:
         inputs:
           - name: test-product
         run:
-          path: bash
+          path: sh
           dir: test-product
           args:
             - -exc
