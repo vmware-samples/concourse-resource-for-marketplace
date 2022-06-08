@@ -152,3 +152,29 @@ jobs:
             - |
               test -f nginx-chart.tgz
               helm show chart nginx-chart.tgz | grep "name: nginx"
+
+
+- name: test-get-no-download
+  plan:
+    - get: test-product
+      params:
+        skip_download: true
+    - task: inspect-product.json
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
+            username: ((harbor.username))
+            password: ((harbor.token))
+            tag: latest
+        inputs:
+          - name: test-product
+        run:
+          path: bash
+          dir: test-product
+          args:
+            - -exc
+            - |
+              test $(jq -r .slug product.json) == nginx
