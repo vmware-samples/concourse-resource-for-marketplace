@@ -58,8 +58,8 @@ resources:
     type: github-release
     icon: github
     source:
-      owner: vmware-labs
-      repository: marketplace-cli
+      owner: vmware-samples
+      repository: concourse-resource-for-marketplace
       access_token: ((github.access_token))
 
   - name: test-product
