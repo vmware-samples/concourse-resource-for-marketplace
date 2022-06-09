@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 )
 
 type Input struct {
@@ -23,10 +24,29 @@ type SourceInput struct {
 }
 
 type ParamsInput struct {
+	// In params
 	AcceptEula   bool   `json:"accept_eula"`
 	Filter       string `json:"filter"`
 	Filename     string `json:"filename"`
 	SkipDownload bool   `json:"skip_download"`
+
+	// Out params
+	ProductVersion     string `json:"product_version"`
+	ProductVersionFile string `json:"product_version_file"`
+	AssetType          string `json:"asset_type"`
+	File               string `json:"file"`
+	Chart              string `json:"chart"`
+	Instructions       string `json:"instructions"`
+	InstructionsFile   string `json:"instructions_file"`
+	ImageTag           string `json:"image_tag"`
+	ImageTagFile       string `json:"image_tag_file"`
+	ImageTagType       string `json:"image_tag_type"`
+
+	// for mkpcli attach <asset type>
+	CreateVersion bool `json:"create_version"`
+
+	// for mkpcli product set
+	//OSLFile string `json:"osl_file"`
 }
 
 func ParseFromReader(inputReader io.Reader) (*Input, error) {
@@ -50,4 +70,16 @@ func (i *Input) ValidateSource() error {
 		return errors.New("marketplace product slug must be defined. Please set source.product_slug")
 	}
 	return nil
+}
+
+func StringOrFile(stringValue, filePath string) (string, error) {
+	if stringValue != "" {
+		return stringValue, nil
+	} else {
+		fileContents, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
+		}
+		return string(fileContents), nil
+	}
 }

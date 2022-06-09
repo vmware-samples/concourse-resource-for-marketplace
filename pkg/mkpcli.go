@@ -76,6 +76,49 @@ func (i *Input) DownloadAsset(folder string) error {
 	return err
 }
 
+func (i *Input) AttachAsset() error {
+	productVersion, err := StringOrFile(i.Params.ProductVersion, i.Params.ProductVersionFile)
+	if err != nil {
+		return err
+	}
+
+	args := []string{"attach", i.Params.AssetType, "--product", i.Source.ProductSlug, "--product-version", productVersion}
+
+	// TODO: Move all this string or file checks into the validator and always set the string version
+	if i.Params.AssetType == "image" {
+		tag, err := StringOrFile(i.Params.ImageTag, i.Params.ImageTagFile)
+		if err != nil {
+			return err
+		}
+
+		instructions, err := StringOrFile(i.Params.Instructions, i.Params.InstructionsFile)
+		if err != nil {
+			return err
+		}
+
+		args = append(args, "--tag", tag, "--tag-type", i.Params.ImageTagType, "--instructions", instructions)
+		if i.Params.File != "" {
+			args = append(args, "--file", i.Params.File)
+		}
+	} else if i.Params.AssetType == "chart" {
+		instructions, err := StringOrFile(i.Params.Instructions, i.Params.InstructionsFile)
+		if err != nil {
+			return err
+		}
+
+		args = append(args, "--chart", i.Params.Chart, "--instructions", instructions)
+	} else if i.Params.AssetType == "vm" {
+		args = append(args, "--file", i.Params.File)
+	}
+
+	if i.Params.CreateVersion {
+		args = append(args, "--create-version")
+	}
+
+	_, err = i.run(args)
+	return err
+}
+
 func (i *Input) GetInputVersion() *Version {
 	return i.Version
 }
