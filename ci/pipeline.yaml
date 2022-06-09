@@ -1,180 +1,344 @@
 ---
 resource_types:
-- name: marketplace
-  type: registry-image
-  source:
-    repository: harbor-repo.vmware.com/tanzu_isv_engineering/mkpcli_concourse_resource
-    username: ((harbor.username))
-    password: ((harbor.token))
-    tag: staging
+  - name: github-release
+    type: registry-image
+    source:
+      repository: harbor-repo.vmware.com/dockerhub-proxy-cache/concourse/github-release-resource
+      tag: 1.6.4
+      username: ((harbor.username))
+      password: ((harbor.token))
+
+  - name: marketplace
+    type: registry-image
+    source:
+      repository: harbor-repo.vmware.com/tanzu_isv_engineering/mkpcli_concourse_resource
+      username: ((harbor.username))
+      password: ((harbor.token))
+      tag: staging
 
 resources:
-- name: source
-  type: git
-  icon: github
-  source:
-    uri: git@github.com:vmware-samples/concourse-resource-for-marketplace.git
-    private_key: ((github.private_key))
-    branch: main
+  - name: source
+    type: git
+    icon: github
+    source:
+      uri: git@github.com:vmware-samples/concourse-resource-for-marketplace.git
+      private_key: ((github.private_key))
+      branch: main
 
-- name: staging-image
-  type: registry-image
-  icon: docker
-  source:
-    repository: harbor-repo.vmware.com/tanzu_isv_engineering/mkpcli_concourse_resource
-    username: ((harbor.username))
-    password: ((harbor.token))
-    tag: staging
+  - name: version
+    type: semver
+    icon: github
+    source:
+      driver: git
+      uri: git@github.com:vmware-samples/concourse-resource-for-marketplace.git
+      private_key: ((github.private_key))
+      branch: main
+      file: version
+      commit_message: "[ci skip] bump version to %version%"
 
-- name: test-product
-  type: marketplace
-  icon: storefront
-  source:
-    csp_api_token: ((marketplace_api_token))
-    marketplace_env: production
-    product_slug: nginx
+  - name: staging-image
+    type: registry-image
+    icon: docker
+    source:
+      repository: harbor-repo.vmware.com/tanzu_isv_engineering/mkpcli_concourse_resource
+      username: ((harbor.username))
+      password: ((harbor.token))
+      tag: staging
 
-- name: mkpcli
-  type: registry-image
-  icon: docker
-  source:
-    repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
-    username: ((harbor-public.username))
-    password: ((harbor-public.token))
+  - name: production-image
+    type: registry-image
+    icon: docker
+    source:
+      repository: projects.registry.vmware.com/tanzu_isv_engineering/concourse_resource_for_marketplace
+      username: ((harbor-public.username))
+      password: ((harbor-public.token))
+      tag: latest
+
+  - name: release
+    type: github-release
+    icon: github
+    source:
+      owner: vmware-labs
+      repository: marketplace-cli
+      access_token: ((github.access_token))
+
+  - name: test-product
+    type: marketplace
+    icon: storefront
+    source:
+      csp_api_token: ((marketplace_api_token))
+      marketplace_env: production
+      product_slug: nginx
+
+  - name: mkpcli
+    type: registry-image
+    icon: docker
+    source:
+      repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
+      username: ((harbor-public.username))
+      password: ((harbor-public.token))
 
 jobs:
-- name: test
-  plan:
-    - get: source
-      trigger: true
-    - task: test
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: harbor-repo.vmware.com/dockerhub-proxy-cache/library/golang
-            tag: 1.18
-        inputs:
-          - name: source
-        run:
-          path: make
-          dir: source
-          args: [ test ]
+  - name: test
+    plan:
+      - get: source
+        trigger: true
+      - task: test
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: harbor-repo.vmware.com/dockerhub-proxy-cache/library/golang
+              tag: 1.18
+          inputs:
+            - name: source
+          run:
+            path: make
+            dir: source
+            args: [ test ]
 
-- name: build
-  plan:
-  - get: mkpcli
-  - get: source
-    passed: [test]
-    trigger: true
-  - task: make-build-args
-    image: mkpcli
-    config:
-      platform: linux
-      inputs:
-        - name: mkpcli
-      outputs:
-        - name: build-args
-      run:
-        path: bash
-        args:
-          - -exc
-          - |
-            echo "MKPCLI_VERSION="$(cat mkpcli/tag) > build-args/args.env
-  - task: build-image
-    privileged: true
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: harbor-repo.vmware.com/dockerhub-proxy-cache/concourse/oci-build-task
-          username: ((harbor.username))
-          password: ((harbor.token))
-      params:
-        BUILD_ARGS_FILE: build-args/args.env
-      inputs:
-        - name: build-args
-        - name: source
-          path: .
-      outputs:
-        - name: image
-      run:
-        path: build
-  - put: staging-image
-    inputs: [ image ]
-    params:
-      image: image/image.tar
+  - name: build
+    serial_groups: [ version ]
+    plan:
+      - in_parallel:
+        - get: version
+          params:
+            pre: rc
+        - get: source
+          passed: [test]
+          trigger: true
+        - get: mkpcli
+          trigger: true
+      - task: make-build-args
+        image: mkpcli
+        config:
+          platform: linux
+          inputs:
+            - name: mkpcli
+          outputs:
+            - name: build-args
+          run:
+            path: bash
+            args:
+              - -exc
+              - |
+                echo "MKPCLI_VERSION="$(cat mkpcli/tag) > build-args/args.env
+      - task: build-image
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: harbor-repo.vmware.com/dockerhub-proxy-cache/concourse/oci-build-task
+              username: ((harbor.username))
+              password: ((harbor.token))
+          params:
+            BUILD_ARGS_FILE: build-args/args.env
+          inputs:
+            - name: build-args
+            - name: source
+              path: .
+          outputs:
+            - name: image
+          run:
+            path: build
+      - put: staging-image
+        inputs: [ image, version ]
+        params:
+          image: image/image.tar
+          additional_tags: version/version
+      - put: version
+        inputs: detect
+        params:
+          file: version/version
 
-- name: test-get
-  plan:
-    - get: test-product
-      params:
-        accept_eula: true
-        filename: nginx-chart.tgz
-    - task: inspect-metadata-files
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
-            username: ((harbor.username))
-            password: ((harbor.token))
-            tag: latest
-        inputs:
-          - name: test-product
-        run:
-          path: bash
-          dir: test-product
-          args:
-            - -exc
-            - |
-              test $(jq -r .slug product.json) == nginx
-              cat version
-    - task: inspect-downloaded-chart
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: harbor-repo.vmware.com/dockerhub-proxy-cache/alpine/helm
-            username: ((harbor.username))
-            password: ((harbor.token))
-            tag: latest
-        inputs:
-          - name: test-product
-        run:
-          path: sh
-          dir: test-product
-          args:
-            - -exc
-            - |
-              test -f nginx-chart.tgz
-              helm show chart nginx-chart.tgz | grep "name: nginx"
+  - name: test-get
+    plan:
+      - in_parallel:
+        - get: source
+          passed: [build]
+        - get: version
+          passed: [build]
+        - get: mkpcli
+          passed: [build]
+        - get: test-product
+          params:
+            accept_eula: true
+            filename: nginx-chart.tgz
+        - get: staging-image
+          passed: [build]
+          trigger: true
+          params:
+            skip_download: true
+      - task: inspect-metadata-files
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
+              username: ((harbor.username))
+              password: ((harbor.token))
+              tag: latest
+          inputs:
+            - name: test-product
+          run:
+            path: bash
+            dir: test-product
+            args:
+              - -exc
+              - |
+                test $(jq -r .slug product.json) == nginx
+                cat version
+      - task: inspect-downloaded-chart
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: harbor-repo.vmware.com/dockerhub-proxy-cache/alpine/helm
+              username: ((harbor.username))
+              password: ((harbor.token))
+              tag: latest
+          inputs:
+            - name: test-product
+          run:
+            path: sh
+            dir: test-product
+            args:
+              - -exc
+              - |
+                test -f nginx-chart.tgz
+                helm show chart nginx-chart.tgz | grep "name: nginx"
 
-- name: test-get-no-download
-  plan:
-    - get: test-product
-      params:
-        skip_download: true
-    - task: inspect-product.json
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
-            username: ((harbor.username))
-            password: ((harbor.token))
-            tag: latest
-        inputs:
-          - name: test-product
-        run:
-          path: bash
-          dir: test-product
-          args:
-            - -exc
-            - |
-              test $(jq -r .slug product.json) == nginx
+  - name: test-get-no-download
+    plan:
+      - in_parallel:
+        - get: source
+          passed: [build]
+        - get: version
+          passed: [build]
+        - get: mkpcli
+          passed: [build]
+        - get: test-product
+          params:
+            skip_download: true
+        - get: staging-image
+          passed: [build]
+          trigger: true
+          params:
+            skip_download: true
+      - task: inspect-product.json
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: projects.registry.vmware.com/tanzu_isv_engineering/mkpcli
+              username: ((harbor.username))
+              password: ((harbor.token))
+              tag: latest
+          inputs:
+            - name: test-product
+          run:
+            path: bash
+            dir: test-product
+            args:
+              - -exc
+              - |
+                test $(jq -r .slug product.json) == nginx
+
+  - name: release
+    serial_groups: [ version ]
+    plan:
+      - get: source
+        passed:
+          - test-get
+          - test-get-no-download
+      - get: version
+        passed:
+          - test-get
+          - test-get-no-download
+        params:
+          bump: final
+      - get: mkpcli
+        passed:
+          - test-get
+          - test-get-no-download
+      - task: make-build-args
+        image: mkpcli
+        config:
+          platform: linux
+          inputs:
+            - name: mkpcli
+          outputs:
+            - name: build-args
+          run:
+            path: bash
+            args:
+              - -exc
+              - |
+                echo "MKPCLI_VERSION="$(cat mkpcli/tag) > build-args/args.env
+      - task: build-image
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: harbor-repo.vmware.com/dockerhub-proxy-cache/concourse/oci-build-task
+              username: ((harbor.username))
+              password: ((harbor.token))
+          params:
+            BUILD_ARGS_FILE: build-args/args.env
+          inputs:
+            - name: build-args
+            - name: source
+              path: .
+          outputs:
+            - name: image
+          run:
+            path: build
+      - do:
+          - get: release
+          - task: make-release-notes
+            config:
+              platform: linux
+              image_resource:
+                type: registry-image
+                source:
+                  repository: harbor-repo.vmware.com/dockerhub-proxy-cache/library/golang
+                  tag: 1.17
+                  username: ((harbor.username))
+                  password: ((harbor.token))
+              inputs:
+                - name: release
+                - name: source
+              outputs:
+                - name: release-notes
+              run:
+                path: bash
+                dir: source
+                args:
+                  - -exc
+                  - |
+                    git log $(cat ../release/tag)..HEAD --oneline | grep -v "\[ci skip\] bump version" > ../release-notes/notes.txt
+      - put: production-image
+        inputs: [ image, version ]
+        params:
+          image: image/image.tar
+          additional_tags: version/version
+      - put: release
+        inputs: [ source, version, release-notes ]
+        params:
+          name: version/version
+          tag: version/version
+          tag_prefix: v
+          commitish: source/.git/ref
+          body: release-notes/notes.txt
+      - put: version
+        inputs: detect
+        params:
+          file: version/version
