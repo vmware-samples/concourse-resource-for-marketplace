@@ -67,6 +67,11 @@ var InCmd = &cobra.Command{
 			return fmt.Errorf("failed to write product.json: %w", err)
 		}
 
+		err = ioutil.WriteFile(path.Join(args[0], "version"), []byte(MarketplaceCLI.GetInputVersion().VersionNumber), 0644)
+		if err != nil {
+			return fmt.Errorf("failed to write version: %w", err)
+		}
+
 		err = MarketplaceCLI.DownloadAsset(args[0])
 		if err != nil {
 			return fmt.Errorf("failed to download asset: %w", err)

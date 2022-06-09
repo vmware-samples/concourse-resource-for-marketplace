@@ -61,6 +61,12 @@ var _ = Describe("in", func() {
 			Expect(string(contents)).To(Equal("this is the product JSON, really"))
 		})
 
+		By("saving a version file", func() {
+			contents, err := ioutil.ReadFile(path.Join(tempDir, "version"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(contents)).To(Equal("1.2.3"))
+		})
+
 		By("calling the marketplace cli to download the asset", func() {
 			Expect(marketplaceCLI.DownloadAssetCallCount()).To(Equal(1))
 			Expect(marketplaceCLI.DownloadAssetArgsForCall(0)).To(Equal(tempDir))
@@ -68,7 +74,7 @@ var _ = Describe("in", func() {
 
 		By("printing the metadata", func() {
 			Expect(marketplaceCLI.GetInputSlugCallCount()).To(Equal(1))
-			Expect(marketplaceCLI.GetInputVersionCallCount()).To(Equal(2))
+			Expect(marketplaceCLI.GetInputVersionCallCount()).To(Equal(3))
 			var output *cmd.InOutput
 			Expect(json.Unmarshal(stdout.Contents(), &output)).To(Succeed())
 			Expect(output.Version.VersionNumber).To(Equal("1.2.3"))

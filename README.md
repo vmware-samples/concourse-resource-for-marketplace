@@ -55,6 +55,8 @@ Downloads a product asset from the VMware Marketplace.
 The details for the product is written to both `product.json` in the working directory (typically `/tmp/build/get`).
 Use this to programmatically get information for the product.
 
+A version file is written to `version`
+
 #### Parameters
 
 * `filename`: *Required string (unless `skip_download` is `true`).*

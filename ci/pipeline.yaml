@@ -113,7 +113,7 @@ jobs:
       params:
         accept_eula: true
         filename: nginx-chart.tgz
-    - task: inspect-product.json
+    - task: inspect-metadata-files
       config:
         platform: linux
         image_resource:
@@ -132,6 +132,7 @@ jobs:
             - -exc
             - |
               test $(jq -r .slug product.json) == nginx
+              cat version
     - task: inspect-downloaded-chart
       config:
         platform: linux
@@ -152,7 +153,6 @@ jobs:
             - |
               test -f nginx-chart.tgz
               helm show chart nginx-chart.tgz | grep "name: nginx"
-
 
 - name: test-get-no-download
   plan:
