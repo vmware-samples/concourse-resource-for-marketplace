@@ -22,8 +22,7 @@ type MarketplaceCLI interface {
 	GetInputSlug() string
 }
 
-func (i *Input) GetProductJSON() ([]byte, error) {
-	args := []string{"product", "get", "--output", "json", "--product", i.Source.ProductSlug, "--product-version", i.Version.VersionNumber}
+func (i *Input) run(args []string) ([]byte, error) {
 	command := MakeMkpcliCommand(i, args...)
 	results, err := command.Output()
 	if err != nil {
@@ -36,16 +35,16 @@ func (i *Input) GetProductJSON() ([]byte, error) {
 	return results, nil
 }
 
+func (i *Input) GetProductJSON() ([]byte, error) {
+	args := []string{"product", "get", "--output", "json", "--product", i.Source.ProductSlug, "--product-version", i.Version.VersionNumber}
+	return i.run(args)
+}
+
 func (i *Input) GetVersions() ([]*Version, error) {
 	args := []string{"product", "list-versions", "--output", "json", "--product", i.Source.ProductSlug}
-	command := MakeMkpcliCommand(i, args...)
-	results, err := command.Output()
+	results, err := i.run(args)
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return nil, fmt.Errorf("failed to run mkpcli %s:\n%s\n%w", strings.Join(args, " "), string(exitErr.Stderr), err)
-		}
-		return nil, fmt.Errorf("failed to run mkpcli %s: %w", strings.Join(args, " "), err)
+		return nil, err
 	}
 
 	var versions []*Version
@@ -73,17 +72,8 @@ func (i *Input) DownloadAsset(folder string) error {
 		args = append(args, "--filter", i.Params.Filter)
 	}
 
-	command := MakeMkpcliCommand(i, args...)
-	_, err := command.Output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return fmt.Errorf("failed to run mkpcli %s:\n%s\n%w", strings.Join(args, " "), string(exitErr.Stderr), err)
-		}
-		return fmt.Errorf("failed to run mkpcli %s: %w", strings.Join(args, " "), err)
-	}
-
-	return nil
+	_, err := i.run(args)
+	return err
 }
 
 func (i *Input) GetInputVersion() *Version {
