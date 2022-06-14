@@ -97,6 +97,10 @@ jobs:
     file: tasks/deploy-chart.yml      
 ```
 
+### `out`: upload and attach product assets to a product in the VMware Marketplace
+
+Not yet implemented. It's on the roadmap!
+
 ## Developing
 
 ### Prerequisites
