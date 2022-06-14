@@ -24,11 +24,8 @@ endif
 HAS_COUNTERFEITER := $(shell command -v counterfeiter;)
 HAS_GINKGO := $(shell command -v ginkgo;)
 HAS_GOLANGCI_LINT := $(shell command -v golangci-lint;)
-#HAS_SHELLCHECK := $(shell command -v shellcheck;)
 PLATFORM := $(shell uname -s)
 
-# If go get is run from inside the project directory it will add the dependencies
-# to the go.mod file. To avoid that we import from another directory
 deps-counterfeiter: deps-go-binary
 ifndef HAS_COUNTERFEITER
 	go install github.com/maxbrunsfeld/counterfeiter/v6@latest
@@ -48,16 +45,6 @@ ifeq ($(PLATFORM), Linux)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.46.2
 endif
 endif
-
-#deps-shellcheck:
-#ifndef HAS_SHELLCHECK
-#ifeq ($(PLATFORM), Darwin)
-#	brew install shellcheck
-#endif
-#ifeq ($(PLATFORM), Linux)
-#	apt-get update && apt-get install -y shellcheck
-#endif
-#endif
 
 # #### CLEAN ####
 .PHONY: clean
@@ -105,7 +92,6 @@ test-units: deps
 
 test: deps lint test-units
 
-#lint: deps-golangci-lint deps-shellcheck
 lint: deps-golangci-lint
 	golangci-lint run
 

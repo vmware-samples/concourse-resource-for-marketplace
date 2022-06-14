@@ -121,4 +121,4 @@ make test
 
 ### Contributing
 
-Please make all pull requests to the `main` branch, and
+Please see our [Code of Conduct](CODE-OF-CONDUCT.md) and [Contributors guide](CONTRIBUTING.md).
